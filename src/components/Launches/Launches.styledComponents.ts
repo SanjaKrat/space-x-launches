@@ -35,6 +35,8 @@ export const LaunchesGrid = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
+  box-sizing: border-box;
+  padding: 0 10px;
   justify-content: center;
 `;
 
