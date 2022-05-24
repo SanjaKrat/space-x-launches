@@ -5,6 +5,7 @@ const InputWrapper = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: end;
+  position: relative;
 `;
 
 const InputStyled = styled.input`
@@ -16,7 +17,6 @@ const InputStyled = styled.input`
   background-color: inherit;
   color: inherit;
   border-bottom: 2px solid white;
-  /* & ::-webkit-inner-spin-button { display: none; } */
 `;
 
 type InputProps = {
@@ -28,10 +28,24 @@ type InputProps = {
   onChange: (inputData: string) => void,
 }
 
-const Input = ({ type = 'text', id, label, value, placeholder = '', onChange }: InputProps) => (
+const Input = ({
+  type = 'text',
+  id,
+  label,
+  value,
+  placeholder = '',
+  onChange,
+}: InputProps) => (
   <InputWrapper>
     <label htmlFor={id}>{label}</label>
-    <InputStyled name={id} id={id} type={type} value={value} placeholder={placeholder} onChange={(evt) => onChange(evt.target.value)} />
+    <InputStyled
+      name={id}
+      id={id}
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(evt) => onChange(evt.target.value)}
+    />
   </InputWrapper>
 )
 

@@ -1,41 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import Container from '../../common/Container';
 import axios from 'axios';
+
+import {
+  FiltersBar,
+  FiltersButton,
+  LaunchesGrid,
+  LaunchesStyled,
+  NoLaunches,
+  StickyContainer
+} from './Launches.styledComponents';
 import LaunchCard from './LaunchCard/LaunchCard';
-import Input from '../../common/Input';
-import { Launch, SelectOption } from '../../types';
-import Dropdown from '../../common/Dropdown';
 import LaunchPopup from './LaunchPopup/LaunchPopup';
+import SideMenu from './SideMenu/SideMenu';
+
+import Container from '../../common/Container';
+import Input from '../../common/Input';
+import Dropdown from '../../common/Dropdown';
 import Spinner from '../../common/spinner';
-import { queryCreator } from '../../helpers';
 import Button from '../../common/Button';
 
-const LaunchesStyled = styled.div`
-  padding-top: 100px;
-`;
-
-const FiltersBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  align-items: stretch;
-`;
-
-const LaunchesGrid = styled.div`
-  margin: 0 auto;
-  margin-top: 50px;
-  margin-bottom: 50px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-`;
-
-const NoLaunches = styled.div`
-  margin-top: 25px;
-  text-align: center;
-`
+import { getYoutubePreview, queryCreator } from '../../helpers';
+import { Launch, Rocket, SelectOption } from '../../types';
 
 const options: SelectOption[] = [
   {
@@ -44,7 +29,7 @@ const options: SelectOption[] = [
   },
   {
     text: 'Success',
-    value: 'succcess'
+    value: 'success'
   },
   {
     text: 'Failed',
@@ -53,10 +38,15 @@ const options: SelectOption[] = [
 ]
 
 const Launches = () => {
-  const [launches, setLaunches] = useState<any[]>([]);
+  const [allLaunches, setAllLaunches] = useState<Launch[]>([]);
+  const [launches, setLaunches] = useState<Launch[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true)
   const [totalDocs, setTotalDocs] = useState(0);
+
+  const [rockets, setRockets] = useState<Rocket[]>([]);
+  const [allRockets, setAllRockets] = useState<Rocket[]>([]);
 
   const [showPopup, setShowPopup] = useState(false);
   const [launch, setLaunch] = useState<Launch>();
@@ -65,6 +55,8 @@ const Launches = () => {
   const [dateFrom, setDateFrom] = useState<string>(new Date('2000-01-01').toISOString());
   const [dateTo, setDateTo] = useState<string>(new Date().toISOString());
   const [selected, setSelected] = useState(options[0].value);
+
+  const [openSideMenu, setOpenSideMenu] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -79,9 +71,24 @@ const Launches = () => {
         }
       })
         .then((response) => {
-          console.log(response);
-          const newList = [...launches, ...response.data.docs];
+          let launchesList: Launch[] = [];
+          response.data.docs.forEach((i: any) => {
+            const onelaunch: Launch = {
+              id: i.id,
+              rocketId: i.rocket,
+              details: i.details,
+              wikipedia: i.links.wikipedia,
+              launchDate: i.date_utc,
+              patchImg: i.links.patch.small,
+              name: i.name,
+              image: i.links.flickr.original.length ? i.links.flickr.original[0] : getYoutubePreview(i.links.youtube_id),
+              youtubeId: i.links.youtube_id
+            }
+            launchesList.push(onelaunch);
+          })
+          const newList = [...launches, ...launchesList];
           setLaunches(newList);
+          setAllLaunches(newList);
           setCurrentPage(prev => prev + 1)
           setTotalDocs(response.data.totalDocs);
         })
@@ -104,80 +111,134 @@ const Launches = () => {
     return () => document.removeEventListener('scroll', scrollHandler);
   }, [launches]);
 
+  useEffect(() => {
+    axios.get('https://api.spacexdata.com/v4/rockets')
+      .then((response) => {
+        let rockets: Rocket[] = [];
+        response.data.forEach((i: any) => {
+          const rocket = {
+            name: i.name,
+            id: i.id
+          }
+          rockets.push(rocket);
+        })
+        setRockets(rockets);
+        setAllRockets(rockets);
+      })
+  }, []);
 
-  const inputChangeHandler = (inputData: string) => setSearchQuery(inputData);
+
+  const inputChangeHandler = (inputData: string) => {
+    setSearchQuery(inputData);
+    if (!inputData) {
+      return setRockets(allRockets);
+    }
+    const filtered = allRockets.filter((rocket => rocket.name.toLowerCase().includes(inputData.toLowerCase().trim())));
+    setRockets(filtered);
+  };
   const dropdownSelectHandler = (value: string) => setSelected(value);
   const closePopup = () => setShowPopup(false);
   const dateFromHandler = (date: string) => setDateFrom(new Date(date).toISOString());
   const dateToHandler = (date: string) => setDateTo(new Date(date).toISOString());
   const filtershandler = () => {
     setLaunches([]);
+    setCurrentPage(1);
     setIsLoading(true);
   };
+  const openMenuHandler = (b: boolean) => setOpenSideMenu(b);
 
-  const currentLaunchClick = (launch: any) => {
-    setShowPopup(true)
-    const res = {
-      details: launch.details,
-      wikipedia: launch.links.wikipedia,
-      launchDate: launch.date_utc,
-      patchImg: launch.links.patch.small,
-      name: launch.name,
-      rocket: launch.rocket,
-      image: launch.links.flickr.original.length ? launch.links.flickr.original[0] : '',
-      youtubeId: launch.links.youtube_id
+  useEffect(() => {
+    const filterbyRocket = () => {
+      let res: Launch[] = [];
+      rockets.map((r) => {
+        return allLaunches.filter((l) => l.rocketId === r.id)
+      }).forEach((arr) => {
+        res = [...res, ...arr];
+      })
+      return res;
     }
-    setLaunch(res);
+    const filtered = filterbyRocket();
+    setLaunches(filtered);
+    if (!searchQuery) {
+      setLaunches(allLaunches);
+    }
+  }, [rockets])
+
+  const currentLaunchClick = (launch: Launch) => {
+    setShowPopup(true)
+    setLaunch(launch);
   }
 
   return (
-    <Container>
-      <LaunchesStyled>
-        <FiltersBar>
-          <Input type="text" id="searchByRocket" placeholder="Rocket Name" onChange={inputChangeHandler} />
-          <Input type="date" id="dateFrom" label="From" value={dateFrom.split('T')[0]} onChange={dateFromHandler} />
-          <Input type="date" id="dateTo" label="To" value={dateTo.split('T')[0]} onChange={dateToHandler} />
-          <Dropdown options={options} selectedValue={selected} onChange={dropdownSelectHandler} />
-          <div>
-            <Button innerText="Search" onClick={filtershandler} />
-          </div>
-        </FiltersBar>
-        {!launches.length && !isLoading && <NoLaunches>No launches...</NoLaunches>}
-        <LaunchesGrid>
-          {
-            launches.map((launch: any, idx: number) => (
-              <LaunchCard
-                onClick={() => currentLaunchClick(launch)}
-                key={idx}
-                details={launch.details}
-                wikipedia={launch.links.wikipedia}
-                launchDate={launch.date_utc}
-                patchImg={launch.links.patch.small}
-                name={launch.name}
-                rocket={launch.rocket}
-                image={launch.links.flickr.original.length ? launch.links.flickr.original[0] : ''}
-                youtubeId={launch.links.youtube_id}
-              />
-            ))
-          }
-        </LaunchesGrid>
-        {isLoading && <Spinner />}
-
+    <LaunchesStyled>
+      <StickyContainer>
+        <Container>
+          <FiltersBar>
+            <Input
+              type="text"
+              id="searchByRocket"
+              placeholder="Rocket Name"
+              onChange={inputChangeHandler}
+            />
+            <Input type="date" id="dateFrom" label="From" value={dateFrom.split('T')[0]} onChange={dateFromHandler} />
+            <Input type="date" id="dateTo" label="To" value={dateTo.split('T')[0]} onChange={dateToHandler} />
+            <Dropdown options={options} selectedValue={selected} onChange={dropdownSelectHandler} />
+            <div>
+              <Button innerText="Search" onClick={filtershandler} />
+            </div>
+          </FiltersBar>
+          <FiltersButton>
+            <Button innerText="Filters" onClick={() => openMenuHandler(true)} />
+          </FiltersButton>
+        </Container>
+      </StickyContainer>
+      {!launches.length && !isLoading && <NoLaunches>No launches...</NoLaunches>}
+      <LaunchesGrid>
         {
-          showPopup && launch && <LaunchPopup
-            details={launch.details}
-            wikipedia={launch.wikipedia}
-            launchDate={launch.launchDate}
-            patchImg={launch.patchImg}
-            name={launch.name}
-            rocket={launch.rocket}
-            image={launch.image}
-            youtubeId={launch.youtubeId}
-            closePopup={closePopup}
-          />
+          launches.map((launch: Launch) => (
+            <LaunchCard
+              onClick={() => currentLaunchClick(launch)}
+              key={launch.id}
+              name={launch.name}
+              image={launch.image}
+              youtubeId={launch.youtubeId}
+            />
+          ))
         }
-      </LaunchesStyled>
-    </Container>
+      </LaunchesGrid>
+      {isLoading && <Spinner />}
+
+      {
+        showPopup && launch && <LaunchPopup
+          details={launch.details}
+          wikipedia={launch.wikipedia}
+          launchDate={launch.launchDate}
+          patchImg={launch.patchImg}
+          name={launch.name}
+          image={launch.image}
+          youtubeId={launch.youtubeId}
+          closePopup={closePopup}
+          id={launch.id}
+          rocketId={launch.rocketId}
+          rocketName={allRockets.find((r) => r.id === launch.rocketId)?.name}
+        />
+      }
+      {
+        openSideMenu &&
+        <SideMenu
+          options={options}
+          selected={selected}
+          dropdownSelectHandler={dropdownSelectHandler}
+          filtershandler={filtershandler}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          dateFromHandler={dateFromHandler}
+          dateToHandler={dateToHandler}
+          inputChangeHandler={inputChangeHandler}
+          openMenu={openMenuHandler}
+        />
+      }
+    </LaunchesStyled>
   )
 }
 

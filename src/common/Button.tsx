@@ -10,6 +10,10 @@ const ButtonStyled = styled.button`
   font-size: inherit;
   font-family: inherit;
   cursor: pointer;
+  & :hover {
+    background-color: white;
+    color: black;
+  }
 `;
 
 type ButtonProps = {

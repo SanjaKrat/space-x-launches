@@ -8,15 +8,19 @@ export const dateGenerator = (date: Date) => {
 
 export const getYoutubePreview = (youtubeId: string) => `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 
-export const queryCreator = (dateFrom: string, dateTo: string, success: string) => {
+export const queryCreator = (
+  dateFrom: string, 
+  dateTo: string, 
+  success: string
+  ) => {
   const options: Option = {
     date_utc: {
       $gte: dateFrom,
       $lte: dateTo
-    }
+    },
   }
   if (success !== 'all') {
-    success === 'success' ? options.success = true : options.success = false;
+    success === 'success' ? options.success = {$eq: true} : options.success = {$eq: false};
   }
   return options;
 }

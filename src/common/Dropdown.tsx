@@ -99,7 +99,7 @@ const Dropdown = ({
   const onSelectClick = () => setIsOpen(!isOpen);
 
   return (
-    <DropdownWrapper tabIndex={0} onFocus={() => setIsOpen(true)} onBlur={() => setIsOpen(false)}>
+    <DropdownWrapper tabIndex={0} onBlur={() => setIsOpen(false)}>
       <OptionWrapper>
         <Select onClick={onSelectClick}>
           {options.find(o => o.value === selectedValue)?.text}

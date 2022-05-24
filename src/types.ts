@@ -9,12 +9,18 @@ export type Launch = {
     launchDate: string,
     patchImg: string,
     name: string,
-    rocket: string,
     image: string,
     youtubeId: string,
+    id: string,
+    rocketId: string
 };
 
 export type Option = {
   date_utc: {},
-  success?: boolean
-}
+  success?: {}
+};
+
+export type Rocket = {
+  id: string,
+  name: string
+};
